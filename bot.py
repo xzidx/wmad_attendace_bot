@@ -94,7 +94,6 @@ async def choose_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     
     data = query.data.replace("mark_", "").split("_")
     student_id = data[0]
@@ -108,7 +107,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update the main attendance list
+    # Update the main list
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -120,7 +119,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    # Delete only the "Choose Come or Late" message
+    # Delete the "Select status" message
     try:
         await query.message.delete()
     except:
