@@ -94,6 +94,7 @@ async def choose_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    await query.answer()
     
     data = query.data.replace("mark_", "").split("_")
     student_id = data[0]
@@ -107,7 +108,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update the main list
+    # Update the main list with new status
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -116,12 +117,12 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=main_message[chat_id],
                 reply_markup=keyboard
             )
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to update main list: {e}")
     
-    # Make the "Select status" message disappear (edit to blank)
+    # Remove the Come/Late selection message
     try:
-        await query.edit_message_text(".")
+        await query.message.delete()
     except:
         pass
 
@@ -160,7 +161,10 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_id in main_message:
         del main_message[chat_id]
     
-    await update.message.reply_text("✅ Reset done. Type /start again.")
+    await update.message.reply_text(
+        "✅ Attendance has been reset.\n\n"
+        "Type /start to begin a new session."
+    )
 
 
 # Handlers
