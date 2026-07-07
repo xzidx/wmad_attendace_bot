@@ -1,12 +1,14 @@
 import os
 import logging
 from datetime import datetime
+from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 import pytz
 from students import STUDENTS
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+PORT = int(os.environ.get("PORT", 10000))
 
 CAMBODIA_TZ = pytz.timezone("Asia/Phnom_Penh")
 attendance = {}
@@ -14,6 +16,8 @@ main_message = {}
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
+
+application = Application.builder().token(TOKEN).build()
 
 
 def get_today_date():
@@ -162,22 +166,36 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-def main():
-    if not TOKEN:
-        print("❌ TELEGRAM_BOT_TOKEN not found!")
-        return
+# Add handlers
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("report", report))
+application.add_handler(CommandHandler("reset", reset))
+application.add_handler(CallbackQueryHandler(choose_status, pattern="^choose_"))
+application.add_handler(CallbackQueryHandler(mark_status, pattern="^mark_"))
 
-    application = Application.builder().token(TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("report", report))
-    application.add_handler(CommandHandler("reset", reset))
-    application.add_handler(CallbackQueryHandler(choose_status, pattern="^choose_"))
-    application.add_handler(CallbackQueryHandler(mark_status, pattern="^mark_"))
+# Flask Webhook
+app = Flask(__name__)
 
-    print("✅ Bot is running (Polling Mode)")
-    application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+@app.route("/")
+def home():
+    return "Attendance Bot is running!"
+
+@app.route(f"/{TOKEN}", methods=["POST"])
+async def webhook():
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    await application.process_update(update)
+    return "ok"
+
+
+async def setup():
+    await application.initialize()
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+    await application.bot.set_webhook(webhook_url)
+    logger.info("Webhook set successfully")
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(setup())
+    app.run(host="0.0.0.0", port=PORT)
