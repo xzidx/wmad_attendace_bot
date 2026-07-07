@@ -73,7 +73,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def choose_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    await query.answer()   # Answer immediately
     
     student_id = query.data.replace("choose_", "")
     student = get_student_by_id(student_id)
@@ -94,7 +94,7 @@ async def choose_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    await query.answer()   # Answer immediately (important for speed)
     
     data = query.data.replace("mark_", "").split("_")
     student_id = data[0]
@@ -120,23 +120,11 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    # Send confirmation + updated list
+    # Short confirmation (no extra message)
     status_text = "✅ Come" if status == "Come" else "⏰ Late"
-    
-    confirmation = f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
-    await query.message.reply_text(confirmation)
-    
-    # Send the full updated attendance list
-    try:
-        updated_keyboard = create_keyboard(chat_id)
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="📋 *Current Attendance*",
-            reply_markup=updated_keyboard,
-            parse_mode="Markdown"
-        )
-    except:
-        pass
+    await query.edit_message_text(
+        f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
+    )
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
