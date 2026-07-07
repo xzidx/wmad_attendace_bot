@@ -119,9 +119,9 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    # Delete the "Select status" message
+    # Make the "Select status" message disappear (edit to blank)
     try:
-        await query.message.delete()
+        await query.edit_message_text(".")
     except:
         pass
 
