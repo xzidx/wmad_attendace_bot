@@ -108,7 +108,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update the main list with new status
+    # Update the main attendance list
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -117,14 +117,14 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=main_message[chat_id],
                 reply_markup=keyboard
             )
-        except Exception as e:
-            logger.warning(f"Failed to update main list: {e}")
+        except:
+            pass
     
-    # Remove the Come/Late selection message
-    try:
-        await query.message.delete()
-    except:
-        pass
+    # Edit the selection message to a short confirmation (no deletion)
+    status_text = "✅ Come" if status == "Come" else "⏰ Late"
+    await query.edit_message_text(
+        f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
+    )
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
