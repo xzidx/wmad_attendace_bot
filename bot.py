@@ -161,15 +161,11 @@ async def auto_mark_absent(context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"Auto-marked {marked_count} students as Absent for {today}")
 
-    # Optional: Send report to a specific chat (you can add your chat ID here)
-    # await context.bot.send_message(chat_id=YOUR_CHAT_ID, text="Attendance auto-marked at 7:20 AM")
 
-
-def setup_scheduler(application):
-    """Setup the daily 7:20 AM job"""
+async def post_init(application: Application):
+    """Start the scheduler after the bot is initialized"""
     scheduler = AsyncIOScheduler(timezone=CAMBODIA_TZ)
 
-    # Run every day at 07:20 Cambodia time
     scheduler.add_job(
         auto_mark_absent,
         trigger=CronTrigger(hour=7, minute=20, timezone=CAMBODIA_TZ),
@@ -185,15 +181,12 @@ def main():
         print("❌ Error: TELEGRAM_BOT_TOKEN environment variable not set!")
         return
 
-    application = Application.builder().token(TOKEN).build()
+    application = Application.builder().token(TOKEN).post_init(post_init).build()
 
     # Commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("report", report))
     application.add_handler(CallbackQueryHandler(mark_attendance))
-
-    # Setup scheduler
-    setup_scheduler(application)
 
     print("✅ Attendance Bot is running...")
     application.run_polling()
