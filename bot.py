@@ -1,14 +1,12 @@
 import os
 import logging
 from datetime import datetime
-from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 import pytz
 from students import STUDENTS
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-PORT = int(os.environ.get("PORT", 10000))
 
 CAMBODIA_TZ = pytz.timezone("Asia/Phnom_Penh")
 attendance = {}
@@ -16,8 +14,6 @@ main_message = {}
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
-application = Application.builder().token(TOKEN).build()
 
 
 def get_today_date():
@@ -108,7 +104,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update the main list
+    # Update main list
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -120,23 +116,10 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    # Send confirmation + updated list
     status_text = "✅ Come" if status == "Come" else "⏰ Late"
-    
-    confirmation = f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
-    await query.message.reply_text(confirmation)
-    
-    # Send the full updated attendance list
-    try:
-        updated_keyboard = create_keyboard(chat_id)
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="📋 *Current Attendance*",
-            reply_markup=updated_keyboard,
-            parse_mode="Markdown"
-        )
-    except:
-        pass
+    await query.edit_message_text(
+        f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
+    )
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -179,35 +162,22 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# Handlers
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("report", report))
-application.add_handler(CommandHandler("reset", reset))
-application.add_handler(CallbackQueryHandler(choose_status, pattern="^choose_"))
-application.add_handler(CallbackQueryHandler(mark_status, pattern="^mark_"))
+def main():
+    if not TOKEN:
+        print("❌ TELEGRAM_BOT_TOKEN not found!")
+        return
 
+    application = Application.builder().token(TOKEN).build()
 
-# Flask Webhook
-app = Flask(__name__)
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("report", report))
+    application.add_handler(CommandHandler("reset", reset))
+    application.add_handler(CallbackQueryHandler(choose_status, pattern="^choose_"))
+    application.add_handler(CallbackQueryHandler(mark_status, pattern="^mark_"))
 
-@app.route("/")
-def home():
-    return "Attendance Bot is running!"
-
-@app.route(f"/{TOKEN}", methods=["POST"])
-async def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    await application.process_update(update)
-    return "ok"
-
-
-async def setup():
-    await application.initialize()
-    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
-    await application.bot.set_webhook(webhook_url)
+    print("✅ Bot is running (Polling Mode)")
+    application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(setup())
-    app.run(host="0.0.0.0", port=PORT)
+    main()
