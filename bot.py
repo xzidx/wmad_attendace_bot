@@ -108,7 +108,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update main list
+    # Update main attendance list
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -120,10 +120,11 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    status_text = "✅ Come" if status == "Come" else "⏰ Late"
-    await query.edit_message_text(
-        f"✅ Thank you!\n{student['id']} - {student['name']}\n{status_text}"
-    )
+    # Delete the "Choose Come or Late" message
+    try:
+        await query.message.delete()
+    except:
+        pass
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -163,7 +164,7 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Reset done. Type /start again.")
 
 
-# Add handlers
+# Handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("report", report))
 application.add_handler(CommandHandler("reset", reset))
@@ -189,7 +190,6 @@ async def setup():
     await application.initialize()
     webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     await application.bot.set_webhook(webhook_url)
-    logger.info(f"Webhook set!")
 
 
 if __name__ == "__main__":
