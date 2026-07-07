@@ -108,7 +108,7 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         attendance[today] = {}
     attendance[today][student_id] = status
     
-    # Update the main attendance list
+    # Update the main list
     if chat_id in main_message:
         try:
             keyboard = create_keyboard(chat_id)
@@ -120,11 +120,23 @@ async def mark_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     
-    # Edit the selection message to a short confirmation (no deletion)
+    # Send confirmation + updated list
     status_text = "✅ Come" if status == "Come" else "⏰ Late"
-    await query.edit_message_text(
-        f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
-    )
+    
+    confirmation = f"✅ Marked as {status_text}\n{student['id']} - {student['name']}"
+    await query.message.reply_text(confirmation)
+    
+    # Send the full updated attendance list
+    try:
+        updated_keyboard = create_keyboard(chat_id)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="📋 *Current Attendance*",
+            reply_markup=updated_keyboard,
+            parse_mode="Markdown"
+        )
+    except:
+        pass
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
